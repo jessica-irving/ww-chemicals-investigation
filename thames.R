@@ -107,3 +107,7 @@ raw_medians <-
   filter(treatment_plant != 'Stoke St George') %>%
   group_by(company, treatment_plant, Latitude, Longitude, group, determinand)%>%
   summarise(median = median(value))  # Sum across all time
+
+hello <- 'test'
+
+howareyou <- hello
