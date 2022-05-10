@@ -34,11 +34,17 @@ all_data <- bind_rows(thames,
                   mystery2, .id = "company")
 
 
+
+
 df <- all_data %>%
   separate(SampleDateTime, into = c("Date", "Time"), sep = " ") %>%
   mutate(Date = as.Date(Date, format = '%d/%m/%Y')) %>%
   rename(treatment_plant = TreatmentPlant, sample_location = SampleLocationName, value = SampleValue, determinand = NameDeterminandName, units = UnitsName) %>%
   left_join(determinands)
+
+units_lookup <- df %>% select(determinand, units) %>% unique() %>% filter(units != 'Not Set') %>%
+  mutate(unit_short = ifelse(units == 'micrograms per litre', 'µg/L', 'mg/L'))
+
 
 
 # Using scaled median values ---------------
@@ -51,7 +57,9 @@ scaled_medians <-
   ungroup() %>%
   group_by(company, determinand) %>% # Keep scaling within companies to account for variation in how they measure determinands in samples
   mutate(scaled_median = scale(median)) %>%
-  filter(scaled_median > 3)
+  filter(scaled_median > 2) %>%
+  left_join(units_lookup) %>%
+  mutate(determinand_value = paste(determinand,":", median, unit_short))
 
 head(scaled_medians)
 
@@ -78,7 +86,7 @@ leaflet(medians_sf) %>%
               )
   
 
-groups = as.character(unique(scaled_medians$group))
+groups <- as.character(unique(scaled_medians$group)) %>% sort()
 
 map <- leaflet(medians_sf) %>% 
   addProviderTiles(providers$CartoDB.Positron)
@@ -93,12 +101,13 @@ for(g in groups){
                                   stroke = FALSE, 
                                   fillOpacity = 0.5, 
                                   color = ~ factpal(group),
-                                  label = ~ determinand,
+                                  label = ~ determinand_value,
                                   popup = ~ treatment_plant,
                                  group = g)
   
 }
-map %>% addLayersControl(overlayGroups = groups)
+map %>% addLayersControl(overlayGroups = groups, options = layersControlOptions(collapsed = FALSE)) %>%
+  addLegend(pal = factpal, values = ~ group, opacity = 0.8, title = "")
 
 # ------ Raw medians
 
@@ -108,6 +117,3 @@ raw_medians <-
   group_by(company, treatment_plant, Latitude, Longitude, group, determinand)%>%
   summarise(median = median(value))  # Sum across all time
 
-hello <- 'test'
-
-# another test
