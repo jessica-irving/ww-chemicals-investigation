@@ -117,3 +117,19 @@ raw_medians <-
   group_by(company, treatment_plant, Latitude, Longitude, group, determinand)%>%
   summarise(median = median(value))  # Sum across all time
 
+# --------- Pivot table
+
+df %>% group_by(group, determinand) %>% summarise(total_readings = n())
+
+df %>% group_by(sample_location) %>% summarise(total_readings = n())
+
+df %>% group_by(treatment_plant, Date) %>% summarise(n = n()) %>%
+  group_by(treatment_plant) %>% summarise(n_samples = sum(n), n_dates_sampled = n(), min_year = min(lubridate::year(Date)), max_year = max(lubridate::year(Date)))
+
+df %>% 
+  group_by(treatment_plant, Date) %>%
+  summarise(n = n()) %>%
+  filter((lubridate::year(Date) =< 2020) && (lubridate::year(Date) => 2015)) #%>%
+  #ggplot(aes(x = lubridate::year(Date), y = treatment_plant, fill = n)) +
+ # geom_tile() +
+ # ylab("")
